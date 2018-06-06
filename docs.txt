@@ -1,0 +1,142 @@
+Text Expansion Processor
+
+
+Synopsis:
+--------
+  This script filters text from STDIN and performs text expansion with
+  the resulting filtered text sent to STDOUT.
+
+  Text expansion is accomplished by defining a macro and it's
+  replacement ( expansion ) text. When a previously defined macro is
+  encountered during text filtering it will be replaced with its
+  expansion text.
+
+  In a text file define a macro and it's expansion on it's own line:
+
+    !test="sunny day"
+
+  Embed the macro in some text:
+
+    This is a @test.
+
+  Run the text through the filter:
+
+    cat textfile | python filter.py
+
+  Will output:
+
+    This is a sunny day.
+
+
+Description
+-----------
+A macro is a sequence of letters, digits and underscore.
+
+Macros are defined with an exclamation mark as the first character in
+a line, followed by the macro name, an equals sign and the expansion
+text. The last character of the macro name and the first character of the
+expansion text must be adjacent to the equals sign.  The expansion
+text continues from the equals sign to the end of the line
+
+Macro defintion examples:
+
+!macro=expansion text
+!name=Harry Potter
+!vehicle=broom
+
+These are not macro defintions:
+
+! this is not a definition
+! this is not = a defintion
+!this = is not a defintion
+!this is=not a defintion
+!this = nope still not
+
+When the filter encounters a line with a macro defintion it will clobber that
+line and suppress it from being sent to STDOUT.
+
+Ex:
+
+line1
+!test=one
+line2
+
+will output:
+
+line1
+line2
+
+There are two ways to use a macro:
+
+  - With trailing whitespace and using a leading @ symbol
+
+      * example    :  @name is my friend.
+        expands to :  Harry Potter is my friend.
+
+  - Embedded between brackets using a leading @ symbol. Use this
+    method when the expansion text needs to be adjacent to other text.
+
+      * example    :  We fly around on @{vehicle}s.
+        expands to :  We fly around on brooms.
+
+
+It is also possible to use a macro in the definition of another macro:
+
+   Ex:
+      !name1=John Q.
+      !name2=Smith
+      !salutation=Dear @name1 @name2
+
+
+If you need to use a @ symbol in your text without triggering a macro
+expansion, escape it using @@:
+
+   Ex:
+       harry@@hogwarts.com
+
+
+Interleaving of macro definitions and text is permitted:
+
+   Ex:
+      !plant=tree
+      my favorite plant is a @plant.
+      !animal=monkey
+      hey look at those @{animal}s over there
+
+   Will output:
+      my favorite plant is a tree.
+      hey look at those monkeys over there
+
+Finally, you may redefine a macro definition during filtering:
+
+Ex:
+!tv_show=price is right
+my favorite tv show is @tv_show
+!tv_show=ellen
+my favorite tv show is @tv_show
+
+Results in:
+my favorite tv show is price is right
+my favorite tv show is ellen
+
+
+Pass Through and Errors
+-----------------------
+
+Improperly formatted macro defintions will be considered text and just
+pass through the filter:
+
+Ex:
+This is not a macro definition
+! So it will pass through
+
+An @ symbol without adjacent text will not trigger a macro expansion.
+
+Ex:
+    @ should be ok
+    this should @ be ok too
+    as well as this@
+
+
+If you attempt to use a macro before it has been defined it will
+result in an error message and halt execution of the filter.
